@@ -2,7 +2,7 @@
 
 ```mermaid
 flowchart LR
-  U[User] --> W[Next.js UI - TODO] --> A[FastAPI]
+  U[User] --> W[Web app - static SPA] --> A[FastAPI]
   A -->|background task| G
   subgraph G[LangGraph pipeline]
     I[intake: URL/SSRF checks] --> X[extract]
@@ -40,5 +40,5 @@ flowchart LR
 - **Web**: Tavily -> Brave. With no keys configured, web/X return nothing and the report is marked low-evidence instead of inventing sources.
 
 ## Known gaps / roadmap
-Next.js frontend, PDF export, Supabase/pgvector (embeddings dedupe currently token-Jaccard), Celery/Redis queue,
+Next.js frontend (a static single-page app is used for now), PDF export, Supabase/pgvector (embeddings dedupe currently token-Jaccard), Celery/Redis queue,
 LangGraph checkpointing + human-review interrupts, auth, OpenTelemetry, real-model benchmark of 2 open-weight models.

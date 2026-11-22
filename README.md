@@ -1,27 +1,61 @@
 # AI Research & Creator Agent
 
-Paste a link (or text) about an AI tool/trend -> the agent extracts what it can, researches across YouTube, Reddit, X and
-news/web in parallel, checks the claims, writes a cited beginner learning report, and drafts original content in your
-voice. Nothing is auto-published. See `docs/architecture.md`.
+Paste a link or text about an AI tool, product or trend. The agent reads it, researches it across YouTube, Reddit, X and
+news/web in parallel, checks the claims against sources, writes a **cited beginner learning report**, and drafts
+**original** LinkedIn / X / Instagram / reel / carousel content in your voice. **Nothing is ever published for you**, and
+the agent never logs in to accounts or bypasses paywalls — if a source is private it asks you to paste the text.
 
-## Quick start (offline demo, no keys, no model)
+Built for the CodingCatalysts "AI Research & Creator Agent" intern project.
+
+## How it works
+`intake -> extract -> plan -> research (5 parallel branches) -> rank/dedupe -> claim check -> write report (section by section) -> drafts (one per format) -> quality checks -> save`
+
+Orchestrated with **LangGraph** (typed state, parallel fan-out/join, early exit when a source is inaccessible).
+See [docs/architecture.md](docs/architecture.md) and [docs/decisions/001-framework-langgraph.md](docs/decisions/001-framework-langgraph.md).
+
+## Run it on Windows (easiest)
+1. Install Python 3.12+ and [Ollama](https://ollama.com).
+2. In a terminal: `ollama pull qwen2.5:3b-instruct`
+3. Copy `.env.example` to `.env` and add a free [Tavily](https://tavily.com) key as `TAVILY_API_KEY=...`
+4. Double-click **`run.bat`**. It creates a virtual environment, installs dependencies, and opens http://localhost:8000.
+
+With no `.env`, `run.bat` starts **demo mode** (sample data, no model, no keys) so you can see the whole flow offline.
+
+## Run it anywhere
 ```bash
 pip install -r requirements.txt
-USE_MOCK=1 python -m pytest -q
-USE_MOCK=1 uvicorn apps.api.main:app_factory --factory --reload
-curl -s localhost:8000/jobs -H 'content-type: application/json' \
-  -d '{"pasted_text":"ExampleTool is a new AI tool that runs locally."}'
-curl -s localhost:8000/jobs/<id>/events      # real per-stage progress
-curl -s localhost:8000/jobs/<id>/export/report.md
+cp .env.example .env                 # add your keys
+uvicorn apps.api.main:app_factory --factory
 ```
+Open http://localhost:8000 (web app) or http://localhost:8000/docs (API).
 
-## Real run
-1. Install [Ollama](https://ollama.com), then `ollama pull qwen2.5:7b-instruct` and `ollama pull qwen2.5:3b-instruct` (swap models via env).
-2. `cp .env.example .env` and add whichever keys you have (Tavily/Brave, YouTube). Missing keys just shrink coverage.
-3. `uvicorn apps.api.main:app_factory --factory`
+## Configuration (`.env`)
+| Variable | Meaning | Default |
+|---|---|---|
+| `LLM_PROVIDER` | `ollama` or `mock` | `ollama` |
+| `REASONING_MODEL` / `FAST_MODEL` | Ollama model names | `qwen2.5:3b-instruct` |
+| `OLLAMA_URL` | Ollama server | `http://localhost:11434` |
+| `LLM_TIMEOUT_S`, `LLM_CALL_BUDGET_S` | Per-request timeout / hard per-call budget | 300 |
+| `OLLAMA_NUM_CTX`, `OLLAMA_NUM_PREDICT` | Context window / max output tokens | 8192 / 3072 |
+| `TAVILY_API_KEY`, `BRAVE_API_KEY`, `YOUTUBE_API_KEY` | Search providers (all optional) | empty |
+| `SEARCH_STAGE_BUDGET_S` | Hard time limit for the search stage | 45 |
+| `MAX_EVIDENCE` | Evidence sources kept after ranking | 15 |
+| `USE_MOCK` | `1` = offline demo with a deterministic mock model and mock search | 0 |
 
-## Easiest way: web page
-Start the server, then open http://localhost:8000 and use the form. (The API docs are at /docs.)
+Missing search keys never break a run: coverage shrinks and the report says the evidence is thin instead of inventing sources.
+
+## Model setup
+Tested on a laptop with an RTX 3050 (4 GB VRAM) using `qwen2.5:3b-instruct` (~2 GB). Small models work best with short,
+focused prompts, so the report is written one section at a time with only the most relevant evidence, and each social
+format is generated in its own call. A 7B model needs more than 4 GB of VRAM to run fast.
+
+## Safety and trust
+- **SSRF protection** on every URL and every redirect hop (private/loopback/metadata addresses are refused).
+- **Prompt-injection defence**: all fetched text is fenced as untrusted data; instruction-like text is flagged; model output is validated; no tool can be triggered by text.
+- **No invented citations**: citations must resolve to stored evidence ids; unknown ids are dropped.
+- **Claim checking**: a claim is only "supported" with 2+ independent domains; otherwise "partly supported". When the model fails to link a claim, an automatic text-overlap check is used and labelled as such.
+- **Originality check**: drafts that reuse 8+ consecutive words from the source are flagged and retried once; names in drafts that no source mentions are flagged.
+- Never auto-publishes. Never logs in or bypasses paywalls.
 
 ## API
 `POST /jobs` · `GET /jobs` · `GET /jobs/{id}` · `GET /jobs/{id}/events` · `PATCH|DELETE /jobs/{id}` ·
@@ -29,9 +63,21 @@ Start the server, then open http://localhost:8000 and use the form. (The API doc
 
 Job status: `queued, running, needs_input, failed, completed, completed_with_warnings`.
 
-## Tests & eval
-`pytest -q` (35 tests) and `USE_MOCK=1 python -m tests.evals.run` (20 cases).
+## Tests and evaluation
+```bash
+pytest -q                              # 41 tests
+USE_MOCK=1 python -m tests.evals.run   # 20 evaluation cases -> docs/eval_results.md
+```
+CI (GitHub Actions) runs the tests, the evaluation and the Docker build on every push. See [docs/evaluation.md](docs/evaluation.md).
 
-## Status
-Backend, agent graph, persistence, Markdown export, tests, eval harness, Dockerfile and CI are done.
-Not yet built: Next.js UI, PDF export, Supabase, auth, deployment, demo video, live-model benchmark.
+## Known limitations
+- Only one local model (`qwen2.5:3b-instruct`) has been tested live; a two-model benchmark is still to do.
+- A 3B model writes basic text: some report sections (for example "Alternatives") can be shallow or circular. Always review before posting.
+- Without a search key there is little evidence. X, YouTube and Reddit coverage depends on the search provider (their own APIs are paid or restricted); fallbacks are documented in the architecture doc.
+- The 20 evaluation cases run in demo mode (mock model); hand-labelled accuracy on real runs is not yet measured.
+- Frontend is a single-page web app (not Next.js); storage is SQLite (not Supabase). No auth, PDF export or deployed URL yet.
+- Video transcripts are not fetched automatically; paste one if you have it.
+
+## Roadmap
+Hosted-model provider and deployment, two-model benchmark, PDF export, Supabase/pgvector, authentication, background queue,
+human-review checkpoints.
