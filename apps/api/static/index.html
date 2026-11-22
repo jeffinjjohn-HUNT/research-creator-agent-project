@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%234f46e5'/%3E%3Cpath d='M16 6l2.2 6.8L25 15l-6.8 2.2L16 24l-2.2-6.8L7 15l6.8-2.2z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg:#f3f5fb; --panel:#fff; --ink:#0f1535; --ink2:#394067; --mute:#6b7396; --line:#e6e9f4; --line2:#d5daea;
+    --p:#4f46e5; --p2:#7c3aed; --psoft:#eef0ff; --pink:#ec4899;
+    --green:#0f9d6e; --greensoft:#e3f7ef; --amber:#c77700; --ambersoft:#fff2da; --red:#d63a4a; --redsoft:#fdebed; --cyan:#0891b2; --cyansoft:#e0f5fa;
+    --shadow:0 1px 2px rgba(15,21,53,.05), 0 10px 30px rgba(15,21,53,.06);
+    --font:"Plus Jakarta Sans","Segoe UI Variable Text","Segoe UI",-apple-system,Helvetica,Arial,sans-serif;
+    --serif:"Source Serif 4",Georgia,"Times New Roman",serif; --mono:Consolas,"Cascadia Code",monospace;
+  }
+  [data-theme="dark"] {
+    --bg:#0c0f1f; --panel:#141830; --ink:#f1f3ff; --ink2:#c9cdea; --mute:#8d94bb; --line:#252b4a; --line2:#343b63;
+    --p:#8b84ff; --p2:#a78bfa; --psoft:#1e2247; --greensoft:#0f2f25; --green:#4cd6a0; --ambersoft:#33270f; --amber:#f2b254;
+    --redsoft:#35161b; --red:#ff7b88; --cyansoft:#0d2b35; --cyan:#4cc9e6;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.55 var(--font); color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; }
+  body::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(900px 420px at 85% -10%, color-mix(in srgb,var(--p) 14%, transparent), transparent),
+               radial-gradient(700px 380px at -5% 0%, color-mix(in srgb,var(--pink) 9%, transparent), transparent); }
+  button { font:inherit; cursor:pointer; } svg { display:block; flex:none; }
+  a { color:var(--p); }
+
+  /* ---------- top navigation ---------- */
+  .nav { position:sticky; top:0; z-index:20; height:66px; display:flex; align-items:center; gap:28px; padding:0 32px;
+    background:color-mix(in srgb,var(--panel) 86%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
+  .logo { display:flex; align-items:center; gap:11px; font-weight:800; font-size:17px; letter-spacing:-.02em; cursor:pointer; }
+  .logo i { width:36px; height:36px; border-radius:11px; background:linear-gradient(135deg,var(--p),var(--p2) 60%,var(--pink)); display:grid; place-items:center; color:#fff; box-shadow:0 6px 16px color-mix(in srgb,var(--p) 40%, transparent); }
+  .links { display:flex; gap:4px; }
+  .links a { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:10px; color:var(--mute); font-weight:600; text-decoration:none; font-size:14px; cursor:pointer; }
+  .links a:hover { color:var(--ink); background:var(--bg); }
+  .links a.on { color:var(--p); background:var(--psoft); }
+  .grow { flex:1; }
+  .mode { font-size:12px; font-weight:600; color:var(--mute); background:var(--bg); border:1px solid var(--line); padding:5px 12px; border-radius:99px; }
+  .iconbtn { width:38px; height:38px; display:grid; place-items:center; border:1px solid var(--line); background:var(--panel); color:var(--ink2); border-radius:11px; }
+  .iconbtn:hover { border-color:var(--p); color:var(--p); }
+  @media (max-width:760px){ .nav{padding:0 14px; gap:10px;} .mode{display:none;} .links a span{display:none;} }
+
+  .page { max-width:1180px; margin:0 auto; padding:34px 32px 90px; }
+  @media (max-width:760px){ .page{padding:22px 14px 70px;} }
+  .head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:26px; }
+  .head h1 { margin:0; font-size:30px; line-height:1.15; font-weight:800; letter-spacing:-.03em; }
+  .head p { margin:6px 0 0; color:var(--mute); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:20px; padding:24px; box-shadow:var(--shadow); }
+  .card h2 { margin:0 0 4px; font-size:17px; font-weight:700; letter-spacing:-.01em; }
+  .sub { color:var(--mute); font-size:13.5px; }
+
+  /* buttons */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:9px; border:0; padding:12px 22px; border-radius:12px; font-weight:700; color:#fff;
+    background:linear-gradient(135deg,var(--p),var(--p2)); box-shadow:0 8px 20px color-mix(in srgb,var(--p) 35%, transparent); transition:transform .1s, filter .1s; }
+  .btn:hover { filter:brightness(1.08); transform:translateY(-1px); } .btn:disabled { opacity:.5; transform:none; cursor:not-allowed; }
+  [data-theme="dark"] .btn { color:#0c0f1f; }
+  .ghost { display:inline-flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--line2); color:var(--ink2); padding:8px 14px; border-radius:10px; font-weight:600; font-size:13.5px; text-decoration:none; }
+  .ghost:hover { border-color:var(--p); color:var(--p); }
+  .linkbtn { background:none; border:0; color:var(--mute); padding:6px; border-radius:8px; } .linkbtn:hover { color:var(--red); background:var(--redsoft); }
+
+  /* stats */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:22px; }
+  @media (max-width:900px){ .stats{grid-template-columns:repeat(2,1fr);} }
+  .stat { display:flex; gap:16px; align-items:center; padding:20px; }
+  .tile { width:50px; height:50px; border-radius:15px; display:grid; place-items:center; flex:none; }
+  .t-p { background:var(--psoft); color:var(--p); } .t-g { background:var(--greensoft); color:var(--green); }
+  .t-a { background:var(--ambersoft); color:var(--amber); } .t-c { background:var(--cyansoft); color:var(--cyan); } .t-r { background:var(--redsoft); color:var(--red); }
+  .num { font-size:30px; font-weight:800; letter-spacing:-.03em; line-height:1; }
+  .lbl { color:var(--mute); font-size:13px; font-weight:500; margin-top:5px; }
+
+  /* quick start */
+  .quick { display:grid; grid-template-columns:1.3fr 1fr; gap:22px; margin-bottom:22px; }
+  @media (max-width:900px){ .quick{grid-template-columns:1fr;} }
+  .hero { color:#fff; border:0; background:linear-gradient(125deg,#4f46e5,#7c3aed 55%,#ec4899); position:relative; overflow:hidden; }
+  .hero::after { content:""; position:absolute; right:-60px; top:-60px; width:240px; height:240px; border-radius:50%; background:rgba(255,255,255,.12); }
+  .hero h2 { font-size:21px; color:#fff; } .hero .sub { color:rgba(255,255,255,.85); }
+  .qrow { display:flex; gap:10px; margin-top:18px; position:relative; z-index:1; flex-wrap:wrap; }
+  .qrow input { flex:1; min-width:200px; border:0; background:#fff; color:#0f1535; padding:13px 16px; border-radius:12px; font:inherit; }
+  .qrow input:focus { outline:3px solid rgba(255,255,255,.5); }
+  .qrow .btn, [data-theme="dark"] .qrow .btn { background:#0f1535; color:#fff; box-shadow:none; }
+  .feat { display:grid; gap:14px; }
+  .fi { display:flex; gap:14px; align-items:flex-start; } .fi b { display:block; font-size:14.5px; } .fi span { color:var(--mute); font-size:13px; }
+  .fi .tile { width:40px; height:40px; border-radius:12px; }
+
+  /* table */
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--mute); font-weight:700; padding:0 12px 12px; }
+  td { padding:14px 12px; border-top:1px solid var(--line); vertical-align:middle; }
+  tr.row { cursor:pointer; } tr.row:hover td { background:var(--bg); }
+  td .nm { font-weight:600; max-width:420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge { display:inline-flex; align-items:center; gap:6px; padding:3px 11px; border-radius:99px; font-size:12px; font-weight:700; background:var(--psoft); color:var(--p); text-transform:capitalize; white-space:nowrap; }
+  .badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .badge.completed { background:var(--greensoft); color:var(--green); } .badge.completed_with_warnings, .badge.needs_input { background:var(--ambersoft); color:var(--amber); }
+  .badge.failed { background:var(--redsoft); color:var(--red); }
+  .empty { text-align:center; color:var(--mute); padding:40px 10px; }
+
+  /* new research page */
+  .two { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:22px; align-items:start; }
+  @media (max-width:980px){ .two{grid-template-columns:1fr;} }
+  label.f { display:block; font-weight:700; font-size:13px; color:var(--ink2); margin:20px 0 7px; } label.f.first { margin-top:0; }
+  input.in, textarea.in, select.in { width:100%; padding:12px 14px; border:1.5px solid var(--line2); border-radius:12px; font:inherit; background:var(--panel); color:var(--ink); transition:.12s; }
+  textarea.in { min-height:140px; resize:vertical; line-height:1.55; }
+  .in::placeholder { color:#a0a6c2; }
+  .in:focus { outline:0; border-color:var(--p); box-shadow:0 0 0 4px color-mix(in srgb,var(--p) 18%, transparent); }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; } @media (max-width:640px){ .row2{grid-template-columns:1fr;} }
+  .hint { color:var(--mute); font-size:12.5px; margin-top:7px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border:1.5px solid var(--line2); border-radius:99px; background:var(--panel); font-size:13px; font-weight:600; color:var(--ink2); cursor:pointer; user-select:none; }
+  .chip:hover { border-color:var(--p); }
+  .chip input { display:none; }
+  .chip:has(input:checked) { background:var(--psoft); border-color:var(--p); color:var(--p); }
+  .chip.sample { border-style:dashed; color:var(--p); }
+  .err { color:var(--red); font-weight:600; font-size:13.5px; }
+
+  /* workspace */
+  .ws { display:grid; grid-template-columns:330px minmax(0,1fr); gap:22px; align-items:start; }
+  @media (max-width:980px){ .ws{grid-template-columns:1fr;} }
+  .steps { display:grid; gap:0; margin-top:18px; }
+  .st { display:grid; grid-template-columns:32px 1fr; gap:12px; position:relative; padding-bottom:18px; }
+  .st:last-child { padding-bottom:0; }
+  .st::before { content:""; position:absolute; left:15px; top:32px; bottom:0; width:2px; background:var(--line2); }
+  .st:last-child::before { display:none; } .st.done::before { background:var(--green); }
+  .dot { width:32px; height:32px; border-radius:50%; display:grid; place-items:center; border:2px solid var(--line2); background:var(--panel); color:var(--mute); font-size:12px; font-weight:700; z-index:1; }
+  .st.done .dot { background:var(--green); border-color:var(--green); color:#fff; }
+  .st.active .dot { border-color:var(--p); color:var(--p); animation:pulse 1.3s infinite; }
+  .st.skip .dot { background:var(--bg); }
+  @keyframes pulse { 50% { box-shadow:0 0 0 7px color-mix(in srgb,var(--p) 20%, transparent); } }
+  .st b { display:block; font-size:14px; line-height:32px; } .st small { display:block; color:var(--mute); font-size:12.5px; margin-top:-6px; }
+  .st.skip b { color:var(--mute); }
+  .tabs { display:flex; gap:6px; padding:5px; background:var(--bg); border-radius:14px; margin-bottom:20px; overflow-x:auto; }
+  .tabs button { flex:1; background:none; border:0; padding:9px 16px; border-radius:10px; color:var(--mute); font-weight:700; white-space:nowrap; }
+  .tabs button:hover { color:var(--ink); } .tabs button.on { background:var(--panel); color:var(--p); box-shadow:0 2px 8px rgba(15,21,53,.1); }
+  .sec { padding:20px 0; border-bottom:1px solid var(--line); } .sec:first-child { padding-top:2px; } .sec:last-child { border-bottom:0; padding-bottom:0; }
+  .sec h3 { margin:0 0 8px; font-size:17px; font-weight:700; display:flex; flex-wrap:wrap; align-items:center; gap:8px; letter-spacing:-.01em; }
+  .sec .body { font-family:var(--serif); font-size:16.5px; line-height:1.75; color:var(--ink2); white-space:pre-wrap; }
+  .cite { padding:0 8px; border-radius:6px; background:var(--psoft); color:var(--p); font:700 11.5px/20px var(--font); }
+  .tag { padding:0 8px; border-radius:6px; background:var(--bg); color:var(--mute); font:700 11px/20px var(--font); text-transform:uppercase; letter-spacing:.05em; }
+  .item { border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:12px; }
+  .item .ttl { font-weight:600; } .item a { word-break:break-all; font-size:13px; text-decoration:none; } .item a:hover { text-decoration:underline; }
+  .id { font:700 12px var(--mono); color:var(--mute); margin-right:8px; } .meta { color:var(--mute); font-size:13px; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:7px; font-size:11px; font-weight:800; margin-right:8px; text-transform:uppercase; letter-spacing:.04em; background:var(--psoft); color:var(--p); vertical-align:1px; }
+  .pill.supported { background:var(--greensoft); color:var(--green); } .pill.partly_supported { background:var(--ambersoft); color:var(--amber); }
+  .pill.contradicted { background:var(--redsoft); color:var(--red); } .pill.not_verified, .pill.opinion { background:var(--bg); color:var(--mute); }
+  .pill.youtube { background:#ffe6e6; color:#d02020; } .pill.reddit { background:#ffeadb; color:#cc4a00; } .pill.x { background:#ececf2; color:#111; }
+  .pill.news { background:var(--cyansoft); color:var(--cyan); } .pill.web { background:var(--greensoft); color:var(--green); }
+  .bar { height:6px; background:var(--line); border-radius:9px; overflow:hidden; width:110px; display:inline-block; vertical-align:middle; } .bar i { display:block; height:100%; background:linear-gradient(90deg,var(--p),var(--pink)); }
+  .draft textarea { min-height:150px; margin:12px 0; }
+  .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .note { background:var(--ambersoft); border:1px solid color-mix(in srgb,var(--amber) 35%, transparent); border-radius:14px; padding:16px 18px; }
+  .note b { display:block; margin-bottom:4px; }
+  .working { text-align:center; padding:60px 20px; color:var(--mute); }
+  .spin { width:38px; height:38px; border-radius:50%; border:4px solid var(--psoft); border-top-color:var(--p); margin:0 auto 16px; animation:sp .9s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .back { display:inline-flex; align-items:center; gap:6px; color:var(--mute); font-weight:600; font-size:13.5px; margin-bottom:14px; cursor:pointer; background:none; border:0; padding:0; } .back:hover { color:var(--p); }
+  dialog { border:1px solid var(--line); border-radius:20px; background:var(--panel); color:var(--ink); max-width:560px; width:92%; padding:26px; box-shadow:0 24px 60px rgba(0,0,0,.3); }
+  dialog::backdrop { background:rgba(8,10,28,.55); backdrop-filter:blur(3px); } dialog h3 { margin:0 0 4px; font-size:19px; }
+  ul.log { list-style:none; margin:10px 0 0; padding:12px 14px; background:var(--bg); border-radius:12px; font:12.5px/1.65 var(--mono); color:var(--mute); } ul.log .warning { color:var(--amber); } ul.log .error { color:var(--red); }
+  details summary { cursor:pointer; color:var(--mute); font-size:13px; margin-top:18px; font-weight:600; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="logo" id="logo"><i id="logoIcon"></i>Research Studio</div>
+  <div class="links">
+    <a id="nDash" data-go="#/"><span>Dashboard</span></a>
+    <a id="nNew" data-go="#/new"><span>New research</span></a>
+  </div>
+  <div class="grow"></div>
+  <div class="mode" id="mode"></div>
+  <button class="iconbtn" id="voiceBtn" title="Voice profile"></button>
+  <button class="iconbtn" id="themeBtn" title="Toggle dark mode"></button>
+</nav>
+<div class="page" id="view"></div>
+
+<dialog id="voiceDlg">
+  <h3>Voice profile</h3>
+  <div class="sub">Drafts follow these rules. Only add text you are happy for the app to use as style examples.</div>
+  <label class="f" for="vRules">Style rules (one per line)</label>
+  <textarea class="in" id="vRules" placeholder="Short sentences&#10;No emojis&#10;Friendly but direct"></textarea>
+  <label class="f" for="vExamples">Example posts of yours (separate with a blank line)</label>
+  <textarea class="in" id="vExamples"></textarea>
+  <div class="actions" style="margin-top:20px"><button class="btn" id="vSave">Save</button><button class="ghost" id="vClose">Cancel</button><span id="vMsg" class="meta"></span></div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+const ICONS = {
+  plus:"M12 5v14M5 12h14", check:"M20 6L9 17l-5-5", clock:"M12 22a10 10 0 100-20 10 10 0 000 20zM12 6v6l4 2",
+  alert:"M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z",
+  file:"M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M8 13h8M8 17h8",
+  grid:"M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z", mic:"M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v3",
+  moon:"M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z",
+  sun:"M12 17a5 5 0 100-10 5 5 0 000 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4",
+  search:"M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3", trash:"M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6", copy:"M9 9h11v11H9zM5 15H4V4h11v1",
+  download:"M12 3v12M7 10l5 5 5-5M5 21h14", spark:"M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z",
+  shield:"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", edit:"M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z",
+  arrow:"M5 12h14M12 5l7 7", back:"M15 18l-6-6 6-6", layers:"M12 2l10 5-10 5L2 7zM2 17l10 5 10-5M2 12l10 5 10-5", link:"M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7"
+};
+function icon(name, size = 20, sw = 2) {
+  const s = document.createElementNS(SVGNS, "svg");
+  s.setAttribute("width", size); s.setAttribute("height", size); s.setAttribute("viewBox", "0 0 24 24");
+  s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", sw);
+  s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round");
+  const p = document.createElementNS(SVGNS, "path"); p.setAttribute("d", ICONS[name]); s.append(p); return s;
+}
+// Safe DOM builder: all text goes through text nodes, never innerHTML (content comes from the web / the model).
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n[k] = v; else n.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return n;
+}
+const pretty = (s) => String(s).replace(/_/g, " ");
+const ago = (iso) => { const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.round(m / 60) + " h ago" : Math.round(m / 1440) + " d ago"; };
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) { let m = r.statusText; try { m = (await r.json()).detail || m; } catch {} throw new Error(m); }
+  return r;
+}
+const json = (body) => ({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+
+/* ---------- chrome ---------- */
+$("logoIcon").replaceChildren(icon("spark", 19, 2.2)); $("voiceBtn").replaceChildren(icon("mic", 18));
+document.querySelectorAll("[data-go]").forEach(a => a.onclick = () => { location.hash = a.dataset.go; });
+$("nDash").prepend(icon("grid", 17)); $("nNew").prepend(icon("plus", 17));
+$("logo").onclick = () => { location.hash = "#/"; };
+function setTheme(t) { document.documentElement.setAttribute("data-theme", t); $("themeBtn").replaceChildren(icon(t === "dark" ? "sun" : "moon", 18)); try { localStorage.setItem("theme", t); } catch {} }
+let savedTheme = null; try { savedTheme = localStorage.getItem("theme"); } catch {}
+setTheme(savedTheme || "light");
+$("themeBtn").onclick = () => setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+api("/health").then(r => r.json()).then(h => { $("mode").textContent = h.mock ? "Demo mode · sample data" : "Model · " + (h.llm.reasoning_model || h.llm.model || h.llm.provider); }).catch(() => {});
+
+/* ---------- router ---------- */
+let timer = null, prefill = null, runId = 0;
+function route() {
+  clearTimeout(timer); runId++;
+  const h = location.hash || "#/";
+  $("nDash").classList.toggle("on", h === "#/"); $("nNew").classList.toggle("on", h === "#/new");
+  if (h.startsWith("#/job/")) return viewJob(h.slice(6));
+  if (h === "#/new") return viewNew();
+  return viewDash();
+}
+addEventListener("hashchange", route);
+
+/* ---------- dashboard ---------- */
+async function viewDash() {
+  const v = $("view"); v.replaceChildren(el("div", { class: "working" }, el("div", { class: "spin" }), "Loading…"));
+  let jobs = []; try { jobs = await api("/jobs").then(r => r.json()); } catch (e) { v.replaceChildren(el("div", { class: "note" }, e.message)); return; }
+  if (location.hash && location.hash !== "#/") return;
+  const c = (f) => jobs.filter(f).length;
+  const stat = (tone, ic, n, label) => el("div", { class: "card stat" }, el("div", { class: "tile " + tone }, icon(ic, 24)), el("div", {}, el("div", { class: "num" }, n), el("div", { class: "lbl" }, label)));
+  const quick = el("input", { placeholder: "Paste a link or a few lines of text…", id: "qin" });
+  const start = () => { const t = quick.value.trim(); prefill = t ? (/^https?:\/\//i.test(t) ? { url: t } : { text: t }) : null; location.hash = "#/new"; };
+  quick.onkeydown = (e) => { if (e.key === "Enter") start(); };
+  const f = (tone, ic, t, d) => el("div", { class: "fi" }, el("div", { class: "tile " + tone }, icon(ic, 20)), el("div", {}, el("b", {}, t), el("span", {}, d)));
+  const rows = jobs.map(j => el("tr", { class: "row", onclick: () => { location.hash = "#/job/" + j.id; } },
+    el("td", {}, el("div", { class: "nm", title: j.name }, j.name)), el("td", {}, el("span", { class: "badge " + j.status }, pretty(j.status))),
+    el("td", { class: "meta" }, ago(j.created_at)),
+    el("td", { style: "text-align:right" }, el("button", { class: "linkbtn", title: "Delete", onclick: async (e) => { e.stopPropagation(); if (confirm("Delete this research and all its data?")) { await api("/jobs/" + j.id, { method: "DELETE" }); viewDash(); } } }, icon("trash", 17)))));
+  v.replaceChildren(
+    el("div", { class: "head" }, el("div", {}, el("h1", {}, "Welcome back"), el("p", {}, "Turn any post into a researched, cited guide and original drafts.")),
+      el("button", { class: "btn", onclick: () => { prefill = null; location.hash = "#/new"; } }, icon("plus", 18, 2.4), "New research")),
+    el("div", { class: "stats" }, stat("t-p", "layers", jobs.length, "Total research"), stat("t-g", "check", c(j => j.status.startsWith("completed")), "Completed"),
+      stat("t-a", "alert", c(j => j.status === "needs_input"), "Needs your input"), stat("t-c", "clock", c(j => ["queued", "running"].includes(j.status)), "In progress")),
+    el("div", { class: "quick" },
+      el("div", { class: "card hero" }, el("h2", {}, "Start a new research"), el("div", { class: "sub" }, "Paste what you saw. We handle the checking, sourcing and writing."),
+        el("div", { class: "qrow" }, quick, el("button", { class: "btn", onclick: start }, "Continue", icon("arrow", 17, 2.4)))),
+      el("div", { class: "card feat" }, f("t-g", "shield", "Claims verified", "Each claim is checked against several sources."), f("t-p", "link", "Every fact cited", "Source cards with links back to the original."),
+        f("t-a", "edit", "Drafts in your voice", "LinkedIn, X, reels and more. You edit and post."))),
+    el("div", { class: "card" }, el("h2", {}, "Recent research"), el("div", { class: "sub", style: "margin-bottom:16px" }, "Open any item to see its report, claims, sources and drafts."),
+      jobs.length ? el("table", {}, el("thead", {}, el("tr", {}, el("th", {}, "Topic"), el("th", {}, "Status"), el("th", {}, "Started"), el("th", {}))), el("tbody", {}, rows))
+                  : el("div", { class: "empty" }, "Nothing here yet. Start your first research above.")));
+}
+
+/* ---------- new research ---------- */
+const FORMATS = [["linkedin", "LinkedIn post"], ["x_thread", "X thread"], ["instagram_caption", "Instagram caption"], ["reel_script", "Reel script"],
+  ["carousel", "Carousel outline"], ["hooks", "Hook options"], ["cta", "Call to action"]];
+const DEFAULT_ON = new Set(["linkedin", "x_thread", "instagram_caption", "reel_script"]);
+const SAMPLES = [["Open-source agent framework", "A new open-source agent framework claims to run fully offline on a laptop."],
+  ["AI replacing developers", "This AI coding tool will replace junior developers by next year, says its creator."],
+  ["Free text-to-video model", "New text-to-video model is free for commercial use. Is that true?"]];
+function viewNew() {
+  const url = el("input", { class: "in", id: "url", placeholder: "https://…  article, YouTube, X, Instagram or LinkedIn link" });
+  const text = el("textarea", { class: "in", id: "text", placeholder: "Paste the post text here. Use this if the link is private or login-protected." });
+  if (prefill) { if (prefill.url) url.value = prefill.url; if (prefill.text) text.value = prefill.text; prefill = null; }
+  const tone = el("select", { class: "in" }, ...["professional", "casual", "enthusiastic", "educational", "witty"].map(t => el("option", {}, t)));
+  const depth = el("select", { class: "in" }, el("option", { value: "quick" }, "Quick"), el("option", { value: "standard", selected: "" }, "Standard"), el("option", { value: "deep" }, "Deep"));
+  const note = el("input", { class: "in", placeholder: "e.g. focus on setup steps for beginners" });
+  const err = el("span", { class: "err" });
+  const fmts = el("div", { class: "chips" }, ...FORMATS.map(([k, l]) => el("label", { class: "chip" }, el("input", Object.assign({ type: "checkbox", value: k }, DEFAULT_ON.has(k) ? { checked: "" } : {})), l)));
+  const go = el("button", { class: "btn" }, "Start research", icon("arrow", 17, 2.4));
+  go.onclick = async () => {
+    err.textContent = ""; const u = url.value.trim(), t = text.value.trim();
+    if (!u && !t) { err.textContent = "Add a link or paste some text first."; return; }
+    const formats = [...fmts.querySelectorAll("input:checked")].map(i => i.value);
+    if (!formats.length) { err.textContent = "Pick at least one draft type."; return; }
+    go.disabled = true;
+    try { const r = await api("/jobs", json({ url: u || null, pasted_text: t || null, note: note.value, formats, tone: tone.value, depth: depth.value })); location.hash = "#/job/" + (await r.json()).id; }
+    catch (e) { err.textContent = e.message; go.disabled = false; }
+  };
+  const f = (tone, ic, t, d) => el("div", { class: "fi" }, el("div", { class: "tile " + tone }, icon(ic, 20)), el("div", {}, el("b", {}, t), el("span", {}, d)));
+  $("view").replaceChildren(
+    el("div", { class: "head" }, el("div", {}, el("h1", {}, "New research"), el("p", {}, "Give us the source. We'll do the checking, researching and writing."))),
+    el("div", { class: "two" },
+      el("div", { class: "card" },
+        el("div", { class: "chips", style: "margin-bottom:22px" }, el("span", { class: "meta", style: "align-self:center" }, "Try an example:"),
+          ...SAMPLES.map(([n, t]) => el("span", { class: "chip sample", onclick: () => { text.value = t; url.value = ""; } }, n))),
+        el("label", { class: "f first" }, "Source link (optional)"), url,
+        el("label", { class: "f" }, "Or paste the text, caption or transcript"), text,
+        el("div", { class: "hint" }, "Instagram, TikTok, X and LinkedIn usually block automated reading. If the source can't be read, you'll be asked to paste it."),
+        el("div", { class: "row2" }, el("div", {}, el("label", { class: "f" }, "Tone"), tone), el("div", {}, el("label", { class: "f" }, "Research depth"), depth)),
+        el("label", { class: "f" }, "Drafts to create"), fmts,
+        el("label", { class: "f" }, "Notes for the agent (optional)"), note,
+        el("div", { style: "display:flex;align-items:center;gap:16px;margin-top:26px" }, go, err)),
+      el("div", { style: "display:grid;gap:22px" },
+        el("div", { class: "card feat" }, el("h2", {}, "What you'll get"),
+          f("t-g", "shield", "Claim check", "Each claim marked supported, partly supported, contradicted or unverified."),
+          f("t-p", "file", "Cited learning guide", "Beginner and technical explanations with setup steps and a glossary."),
+          f("t-c", "search", "Source cards", "Evidence from YouTube, Reddit, X, news and the web."),
+          f("t-a", "edit", "Original drafts", "Editable posts in your tone. Nothing is published for you.")),
+        el("div", { class: "card" }, el("h2", {}, "Good to know"), el("div", { class: "sub" }, "We never log in to your accounts or bypass paywalls. If a source is private, paste its text and we'll continue. A research run usually takes under a minute in demo mode and a few minutes with a real model.")))));
+}
+
+/* ---------- job workspace ---------- */
+const STAGES = [["intake", "Check input", "Validating the link"], ["extract", "Read source", "Extracting text and details"], ["plan", "Plan research", "Finding claims and queries"],
+  ["research", "Search sources", "YouTube, Reddit, X, news, web"], ["normalize", "Rank evidence", "Removing duplicates"], ["claims", "Check claims", "Comparing claims to evidence"],
+  ["synthesize", "Write report", "Cited beginner guide"], ["content", "Draft posts", "In your tone and voice"], ["qa", "Quality checks", "Citations and originality"]];
+let tab = "Report", jobData = null, shownFinal = null;
+function viewJob(id) {
+  jobData = null; shownFinal = null; tab = "Report";
+  const title = el("h1", {}, "Research"), badge = el("span", { class: "badge" }, "queued"), dl = el("div", { class: "actions" });
+  const stepsBox = el("div", { class: "steps" }), log = el("ul", { class: "log" }), main = el("div", { class: "card" }, el("div", { class: "working" }, el("div", { class: "spin" }), "Working on it…"));
+  $("view").replaceChildren(
+    el("button", { class: "back", onclick: () => { location.hash = "#/"; } }, icon("back", 16), "Dashboard"),
+    el("div", { class: "head" }, el("div", {}, title, el("p", {}, badge)), dl),
+    el("div", { class: "ws" }, el("div", { class: "card" }, el("h2", {}, "Progress"), el("div", { class: "sub" }, "Live status from the agent"), stepsBox, el("details", {}, el("summary", {}, "Activity log"), log)), main));
+  const myRun = ++runId; let fails = 0, busy = false;
+  const stopped = () => myRun !== runId || !location.hash.endsWith(id);
+  const schedule = (ms) => { clearTimeout(timer); if (!stopped()) timer = setTimeout(poll, ms); };
+  const poll = async () => {
+    if (busy || stopped()) return; busy = true;
+    try {
+      const [job, ev] = await Promise.all([api("/jobs/" + id).then(r => r.json()), api(`/jobs/${id}/events`).then(r => r.json())]);
+      fails = 0;
+      if (stopped()) return;
+      title.textContent = job.name; badge.textContent = pretty(job.status); badge.className = "badge " + job.status;
+      log.replaceChildren(...ev.map(e => el("li", { class: e.event_type }, `${e.stage}: ${e.message}`)));
+      drawSteps(stepsBox, ev, job.status);
+      const done = !["queued", "running"].includes(job.status);
+      if (done) { if (shownFinal !== job.status) { shownFinal = job.status; jobData = job;
+        dl.replaceChildren(...(job.result && job.result.report ? [el("a", { class: "ghost", href: `/jobs/${job.id}/export/report.md`, download: "report.md" }, icon("download", 16), "Report"),
+          el("a", { class: "ghost", href: `/jobs/${job.id}/export/drafts.md`, download: "drafts.md" }, icon("download", 16), "Drafts")] : []));
+        drawMain(main, job); } return; }
+      schedule(1500);
+    } catch (e) {
+      if (/not found/i.test(e.message)) { main.replaceChildren(el("div", { class: "note" }, "This research no longer exists (it may have been deleted). Go back to the Dashboard.")); return; }
+      fails++; if (fails < 30) schedule(Math.min(1500 * fails, 8000));
+      else main.replaceChildren(el("div", { class: "note" }, "Lost connection to the server. Make sure the black window is still running, then refresh this page."));
+    } finally { busy = false; }
+  };
+  const wake = () => { if (!document.hidden && !stopped()) poll(); };
+  document.addEventListener("visibilitychange", wake); addEventListener("focus", wake);
+  poll();
+}
+function drawSteps(box, events, status) {
+  const last = {}, count = {};
+  events.forEach(e => { const k = e.stage.split(":")[0]; last[k] = e; count[k] = (count[k] || 0) + 1; });
+  if (last.normalize) last.research = last.research || last.normalize;
+  const finished = !["queued", "running"].includes(status); let activeSet = false;
+  box.replaceChildren(...STAGES.map(([k, label, hint], i) => {
+    let cls = "st", dotc;
+    if (last[k]) { cls += " done"; dotc = icon("check", 16, 3); }
+    else if (!finished && !activeSet) { cls += " active"; activeSet = true; dotc = String(i + 1); }
+    else { cls += finished ? " skip" : ""; dotc = String(i + 1); }
+    const sub = last[k] ? (k === "research" ? `${Math.min(count.research || 5, 5)} of 5 source types searched` : last[k].message) : hint;
+    return el("div", { class: cls }, el("div", { class: "dot" }, dotc), el("div", {}, el("b", {}, label), el("small", {}, sub)));
+  }));
+}
+function drawMain(main, job) {
+  if (job.status === "needs_input" || job.status === "failed") {
+    const kids = [el("div", { class: "note" }, el("b", {}, job.status === "needs_input" ? "We couldn't read that source" : "This research couldn't run"), job.error || "Something went wrong.")];
+    if (job.status === "needs_input") {
+      const ta = el("textarea", { class: "in", placeholder: "Paste the caption, transcript or article text here…", style: "margin-top:16px" }), er = el("span", { class: "err" });
+      const b = el("button", { class: "btn", style: "margin-top:14px" }, "Continue with this text", icon("arrow", 17, 2.4));
+      b.onclick = async () => { if (!ta.value.trim()) { er.textContent = "Paste some text first."; return; } b.disabled = true;
+        try { const r = await api("/jobs", json({ url: job.input_url || null, pasted_text: ta.value.trim() })); location.hash = "#/job/" + (await r.json()).id; } catch (e) { er.textContent = e.message; b.disabled = false; } };
+      kids.push(ta, el("div", { style: "display:flex;gap:14px;align-items:center" }, b, er));
+    }
+    main.replaceChildren(...kids); return;
+  }
+  const names = ["Report", "Claims", "Sources", "Drafts", "Quality"], pane = el("div");
+  const tabs = el("div", { class: "tabs" });
+  const draw = () => { tabs.replaceChildren(...names.map(n => el("button", { class: n === tab ? "on" : "", onclick: () => { tab = n; draw(); renderTab(pane, job.result || {}); } }, n))); };
+  draw(); main.replaceChildren(tabs, pane); renderTab(pane, job.result || {});
+}
+function renderTab(pane, r) {
+  pane.replaceChildren();
+  if (tab === "Report") {
+    const rep = r.report || { sections: [], glossary: [] };
+    rep.sections.forEach(s => pane.append(el("div", { class: "sec" }, el("h3", {}, s.title, s.label !== "source_backed" ? el("span", { class: "tag" }, pretty(s.label)) : null, ...s.citations.map(c => el("span", { class: "cite" }, c))), el("div", { class: "body" }, s.body))));
+    if (rep.glossary.length) pane.append(el("div", { class: "sec" }, el("h3", {}, "Glossary"), ...rep.glossary.map(g => el("div", { class: "body" }, el("strong", {}, g.term + ": "), g.definition))));
+    if (!rep.sections.length) pane.append(el("div", { class: "empty" }, "No report was produced."));
+  } else if (tab === "Claims") {
+    (r.claims || []).forEach(c => pane.append(el("div", { class: "item" }, el("div", {}, el("span", { class: "pill " + c.status }, pretty(c.status)), el("span", { class: "id" }, c.id), el("span", { class: "ttl" }, c.claim_text)),
+      el("div", { class: "meta", style: "margin-top:9px" }, "Confidence ", el("span", { class: "bar" }, el("i", { style: `width:${Math.round(c.confidence * 100)}%` })), ` ${Math.round(c.confidence * 100)}%  ·  Evidence: ${c.evidence_ids.join(", ") || "none"}`),
+      c.explanation ? el("div", { style: "margin-top:9px;color:var(--ink2)" }, c.explanation) : null)));
+    if (!(r.claims || []).length) pane.append(el("div", { class: "empty" }, "No claims were identified."));
+  } else if (tab === "Sources") {
+    (r.evidence || []).forEach(e => pane.append(el("div", { class: "item" }, el("div", {}, el("span", { class: "pill " + e.platform }, e.platform), el("span", { class: "id" }, e.id), el("span", { class: "ttl" }, e.title)),
+      el("div", { class: "meta", style: "margin-top:5px" }, `${e.published_at || "undated"}  ·  relevance ${e.relevance_score}`), e.snippet ? el("div", { style: "margin:8px 0;color:var(--ink2)" }, e.snippet) : null,
+      el("a", { href: e.url, target: "_blank", rel: "noopener noreferrer" }, e.url))));
+    if (!(r.evidence || []).length) pane.append(el("div", { class: "empty" }, "No sources were found. The report says so instead of guessing."));
+  } else if (tab === "Drafts") {
+    pane.append(el("div", { class: "meta", style: "margin-bottom:14px" }, "Edit freely and review before posting. Nothing is published automatically."));
+    (r.drafts || []).forEach(d => {
+      const ta = el("textarea", { class: "in" }); ta.value = d.draft_text; const count = el("span", { class: "meta" }, ta.value.length + " characters");
+      ta.oninput = () => { count.textContent = ta.value.length + " characters"; };
+      const cp = el("button", { class: "ghost" }, icon("copy", 15), "Copy"); cp.onclick = () => { navigator.clipboard.writeText(ta.value); cp.lastChild.textContent = "Copied"; setTimeout(() => cp.lastChild.textContent = "Copy", 1500); };
+      pane.append(el("div", { class: "item draft" }, el("div", {}, el("span", { class: "pill" }, pretty(d.format)), el("span", { class: "meta" }, d.tone + (d.source_claim_ids.length ? "  ·  based on " + d.source_claim_ids.join(", ") : ""))), ta,
+        el("div", { class: "actions" }, cp, el("button", { class: "ghost", onclick: () => { ta.value = d.draft_text; count.textContent = ta.value.length + " characters"; } }, "Reset"), count)));
+    });
+    if (!(r.drafts || []).length) pane.append(el("div", { class: "empty" }, "No drafts were produced."));
+  } else {
+    const q = r.quality || { issues: [], passed: true, independent_categories: 0 };
+    pane.append(el("div", { class: "item" }, el("span", { class: "pill " + (q.passed ? "supported" : "contradicted") }, q.passed ? "Checks passed" : "Errors found"), `${q.independent_categories} independent source categories`));
+    q.issues.forEach(i => pane.append(el("div", { class: "item" }, el("span", { class: "pill " + (i.severity === "error" ? "contradicted" : i.severity === "warning" ? "partly_supported" : "") }, i.severity), i.message)));
+    if (!q.issues.length) pane.append(el("div", { class: "empty" }, "No issues."));
+  }
+}
+
+/* ---------- voice profile ---------- */
+$("voiceBtn").onclick = async () => {
+  try { const v = await api("/voice").then(r => r.json()); $("vRules").value = (v.style_rules || []).join("\n"); $("vExamples").value = (v.example_texts || []).join("\n\n"); } catch {}
+  $("vMsg").textContent = ""; $("voiceDlg").showModal();
+};
+$("vClose").onclick = () => $("voiceDlg").close();
+$("vSave").onclick = async () => {
+  try { await api("/voice", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({
+      style_rules: $("vRules").value.split("\n").map(s => s.trim()).filter(Boolean), example_texts: $("vExamples").value.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean) }) });
+    $("vMsg").textContent = "Saved"; setTimeout(() => $("voiceDlg").close(), 600); } catch (e) { $("vMsg").textContent = e.message; }
+};
+route();
+</script>
+</body>
+</html>
