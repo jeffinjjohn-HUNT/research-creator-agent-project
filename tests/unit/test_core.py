@@ -41,7 +41,7 @@ class Flaky(LLM):
     def __init__(self, replies):
         self.replies, self.calls = list(replies), 0
 
-    async def _complete(self, system, prompt, *, fast):
+    async def _complete(self, system, prompt, *, fast, schema=None):
         self.calls += 1
         return self.replies.pop(0)
 
@@ -134,3 +134,68 @@ def test_shared_run():
     src = "this new tool lets anyone build agents in minutes without writing any code at all"
     assert longest_shared_run("Wow: lets anyone build agents in minutes without writing any code", src) >= 8
     assert longest_shared_run("A fresh take on no-code automation for teams", src) < 4
+
+
+@pytest.mark.asyncio
+async def test_llm_call_budget_raises_instead_of_hanging():
+    import asyncio
+
+    class Slow(LLM):
+        name, model = "slow", "s"
+
+        async def _complete(self, system, prompt, *, fast, schema=None):
+            await asyncio.sleep(100)
+
+    with pytest.raises(LLMError, match="did not answer"):
+        await Slow().generate_json(task="t", system="s", prompt="p", schema=ResearchPlan, budget_s=0.2)
+
+
+@pytest.mark.asyncio
+async def test_ollama_sends_schema_and_falls_back_on_400():
+    import json as _json, threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from packages.providers.llm.base import OllamaLLM
+    seen = []
+
+    class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = _json.loads(self.rfile.read(int(self.headers["content-length"])))
+            seen.append(body["format"])
+            if isinstance(body["format"], dict):   # simulate an Ollama that rejects schema formats
+                self.send_response(400); self.end_headers(); return
+            out = _json.dumps({"message": {"content": '{"topic":"ok"}'}}).encode()
+            self.send_response(200); self.send_header("content-type", "application/json"); self.end_headers(); self.wfile.write(out)
+
+        def log_message(self, *a):
+            pass
+
+    srv = HTTPServer(("127.0.0.1", 8998), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        plan = await OllamaLLM("http://127.0.0.1:8998", "m", "m", 30, 0.2).generate_json(
+            task="t", system="s", prompt="p", schema=ResearchPlan)
+    finally:
+        srv.shutdown()
+    assert plan.topic == "ok" and isinstance(seen[0], dict) and seen[1] == "json"
+
+
+def test_heuristic_links_claim_to_matching_sources_only():
+    from packages.agent.nodes.analysis import heuristic_link
+    from packages.agent.schemas.models import Claim, EvidenceSource
+    ev = [EvidenceSource(id="E1", url="https://a.org/x", title="RAG explained", platform="news",
+                         snippet="Retrieval-augmented generation lets a model look up relevant documents before answering"),
+          EvidenceSource(id="E2", url="https://b.org/y", title="Cooking", platform="web", snippet="Boil pasta for ten minutes")]
+    c = Claim(id="C1", claim_text="RAG lets a model look up relevant documents before answering")
+    other = Claim(id="C2", claim_text="Quantum toasters outsell phones")
+    assert heuristic_link([c, other], ev) == 1
+    assert c.evidence_ids == ["E1"] and c.status == "partly_supported"
+    assert other.evidence_ids == [] and other.status == "not_verified"
+
+
+def test_attributed_claims_are_checked_on_their_content():
+    from packages.agent.nodes.analysis import heuristic_link
+    from packages.agent.schemas.models import Claim, EvidenceSource
+    ev = [EvidenceSource(id="E1", url="https://a.org/x", title="t", platform="web",
+                         snippet="RAG reduces made-up answers and lets companies use private data without retraining")]
+    c = Claim(id="C1", claim_text="Supporters say RAG reduces made-up answers and lets companies use private data without retraining")
+    assert heuristic_link([c], ev) == 1 and c.evidence_ids == ["E1"]

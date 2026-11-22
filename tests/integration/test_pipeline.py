@@ -90,9 +90,8 @@ async def test_llm_planning_failure_uses_fallback_plan():
 class CopyingLLM(MockLLM):
     async def generate_json(self, *, task, **kw):
         res = await super().generate_json(task=task, **kw)
-        if task == "content":
-            for d in res.drafts:
-                d.draft_text = "ExampleTool is a new AI tool. and it is all you will ever need today"
+        if task == "content_one":
+            res.draft_text = "ExampleTool is a new AI tool. and it is all you will ever need today"
         return res
 
 
@@ -151,3 +150,25 @@ def test_home_page_served(tmp_path):
     with TestClient(app) as c:
         r = c.get("/")
         assert r.status_code == 200 and "Start research" in r.text
+
+
+@pytest.mark.asyncio
+async def test_hung_provider_cannot_block_job(monkeypatch):
+    import asyncio, time
+    from packages.providers.search.base import SearchProvider
+
+    class Hang(SearchProvider):
+        name = "hang"
+
+        async def search(self, query, limit):
+            await asyncio.sleep(1000)
+
+    monkeypatch.setenv("SEARCH_STAGE_BUDGET_S", "0.4")
+    reg = mock_registry()
+    reg["reddit"] = FallbackChain([Hang()])
+    s = Settings(use_mock=True, search_retries=5, search_timeout_s=60, database_path=":memory:")
+    t0 = time.perf_counter()
+    st = await run_job(build_graph(Deps(MockLLM(), reg, s)), initial())
+    assert time.perf_counter() - t0 < 5          # would be minutes without the stage budget
+    assert any("timed out" in e.message for e in st["events"])
+    assert "reddit" not in {e.platform for e in st["evidence"]} and st["evidence"]
