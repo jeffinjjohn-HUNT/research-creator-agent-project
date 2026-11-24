@@ -29,10 +29,18 @@ uvicorn apps.api.main:app_factory --factory
 ```
 Open http://localhost:8000 (web app) or http://localhost:8000/docs (API).
 
+## Deploy (Render + Groq)
+1. Push this repo to GitHub. Get a free key at [console.groq.com](https://console.groq.com) and a free [Tavily](https://tavily.com) key.
+2. On [render.com](https://render.com): **New → Blueprint**, pick this repo. `render.yaml` sets everything up.
+3. When asked, paste `GROQ_API_KEY` and `TAVILY_API_KEY`. Deploy, then open the `.onrender.com` URL.
+Free-tier notes: the service sleeps after inactivity (first load takes ~30-60 s) and the SQLite history resets on restart.
+Because keys are server-side, anyone with the URL can use your free quotas; a per-IP rate limit (10 jobs/min) is built in.
+
 ## Configuration (`.env`)
 | Variable | Meaning | Default |
 |---|---|---|
-| `LLM_PROVIDER` | `ollama` or `mock` | `ollama` |
+| `LLM_PROVIDER` | `ollama`, `groq` or `mock` | `ollama` |
+| `GROQ_API_KEY`, `GROQ_MODEL`, `GROQ_FAST_MODEL` | Hosted model for deployment | `openai/gpt-oss-120b`, `openai/gpt-oss-20b` |
 | `REASONING_MODEL` / `FAST_MODEL` | Ollama model names | `qwen2.5:3b-instruct` |
 | `OLLAMA_URL` | Ollama server | `http://localhost:11434` |
 | `LLM_TIMEOUT_S`, `LLM_CALL_BUDGET_S` | Per-request timeout / hard per-call budget | 300 |

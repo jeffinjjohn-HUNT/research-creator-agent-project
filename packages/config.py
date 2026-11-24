@@ -37,8 +37,8 @@ class Settings:
     llm_temperature: float = field(default_factory=lambda: float(os.getenv("LLM_TEMPERATURE", "0.2")))
 
     groq_api_key: str = field(default_factory=lambda: os.getenv("GROQ_API_KEY", ""))
-    groq_model: str = field(default_factory=lambda: os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"))
-    groq_fast_model: str = field(default_factory=lambda: os.getenv("GROQ_FAST_MODEL", "llama-3.1-8b-instant"))
+    groq_model: str = field(default_factory=lambda: os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"))
+    groq_fast_model: str = field(default_factory=lambda: os.getenv("GROQ_FAST_MODEL", "openai/gpt-oss-20b"))
     groq_url: str = field(default_factory=lambda: os.getenv("GROQ_URL", "https://api.groq.com/openai/v1"))
 
     # Search providers (all optional; fallbacks are documented in docs/architecture.md)

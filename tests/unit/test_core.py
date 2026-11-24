@@ -199,3 +199,38 @@ def test_attributed_claims_are_checked_on_their_content():
                          snippet="RAG reduces made-up answers and lets companies use private data without retraining")]
     c = Claim(id="C1", claim_text="Supporters say RAG reduces made-up answers and lets companies use private data without retraining")
     assert heuristic_link([c], ev) == 1 and c.evidence_ids == ["E1"]
+
+
+@pytest.mark.asyncio
+async def test_groq_retries_on_429_then_parses_json():
+    import json as _json, threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from packages.providers.llm.base import GroqLLM
+    hits = {"n": 0, "auth": None, "fmt": None, "effort": None}
+
+    class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = _json.loads(self.rfile.read(int(self.headers["content-length"])))
+            hits["n"] += 1; hits["auth"] = self.headers.get("authorization"); hits["fmt"] = body["response_format"]; hits["effort"] = body.get("reasoning_effort")
+            if hits["n"] == 1:
+                self.send_response(429); self.send_header("retry-after", "0"); self.end_headers(); return
+            out = _json.dumps({"choices": [{"message": {"content": '{"topic":"ok"}'}}]}).encode()
+            self.send_response(200); self.send_header("content-type", "application/json"); self.end_headers(); self.wfile.write(out)
+
+        def log_message(self, *a):
+            pass
+
+    srv = HTTPServer(("127.0.0.1", 8997), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        plan = await GroqLLM("k", "openai/gpt-oss-20b", "openai/gpt-oss-20b", 30, 0.2, "http://127.0.0.1:8997/v1").generate_json(
+            task="t", system="s", prompt="p", schema=ResearchPlan)
+    finally:
+        srv.shutdown()
+    assert plan.topic == "ok" and hits["n"] == 2 and hits["auth"] == "Bearer k" and hits["fmt"] == {"type": "json_object"} and hits["effort"] == "low"
+
+
+def test_groq_requires_key():
+    from packages.providers.llm.base import GroqLLM
+    with pytest.raises(ValueError):
+        GroqLLM("", "m", "m", 30, 0.2)

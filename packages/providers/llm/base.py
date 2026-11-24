@@ -123,13 +123,16 @@ class GroqLLM(LLM):
         self.model = model
 
     async def _complete(self, system: str, prompt: str, *, fast: bool, schema: dict | None = None) -> str:
+        model = self.fast_model if fast else self.reasoning_model
         payload = {
-            "model": self.fast_model if fast else self.reasoning_model,
+            "model": model,
             "temperature": self.temperature,
-            "max_tokens": int(os.getenv("GROQ_MAX_TOKENS", "3000")),
+            "max_tokens": int(os.getenv("GROQ_MAX_TOKENS", "4096")),
             "response_format": {"type": "json_object"},
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
         }
+        if "gpt-oss" in model:  # reasoning models: keep thinking short so tokens go to the JSON answer
+            payload["reasoning_effort"] = os.getenv("GROQ_REASONING_EFFORT", "low")
         headers = {"Authorization": f"Bearer {self.api_key}"}
         try:
             async with httpx.AsyncClient(timeout=self.timeout_s) as client:
