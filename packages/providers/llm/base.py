@@ -108,3 +108,46 @@ class OllamaLLM(LLM):
     def describe(self) -> dict:
         return {"provider": self.name, "reasoning_model": self.reasoning_model, "fast_model": self.fast_model,
                 "temperature": self.temperature}
+
+
+class GroqLLM(LLM):
+    """Groq's OpenAI-compatible chat API (free tier available). Works with any OpenAI-compatible server via GROQ_URL."""
+    name = "groq"
+
+    def __init__(self, api_key: str, model: str, fast_model: str, timeout_s: float, temperature: float,
+                 url: str = "https://api.groq.com/openai/v1"):
+        if not api_key:
+            raise ValueError("GROQ_API_KEY is empty. Add it to .env or the host's environment variables.")
+        self.api_key, self.url, self.timeout_s, self.temperature = api_key, url.rstrip("/"), timeout_s, temperature
+        self.reasoning_model, self.fast_model = model, fast_model
+        self.model = model
+
+    async def _complete(self, system: str, prompt: str, *, fast: bool, schema: dict | None = None) -> str:
+        payload = {
+            "model": self.fast_model if fast else self.reasoning_model,
+            "temperature": self.temperature,
+            "max_tokens": int(os.getenv("GROQ_MAX_TOKENS", "3000")),
+            "response_format": {"type": "json_object"},
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+        }
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+                for attempt in range(4):  # free tiers rate-limit: wait and retry instead of failing the job
+                    r = await client.post(f"{self.url}/chat/completions", json=payload, headers=headers)
+                    if r.status_code == 429 and attempt < 3:
+                        try:
+                            wait = float(r.headers.get("retry-after", "") or 2 * (attempt + 1))
+                        except ValueError:
+                            wait = 2 * (attempt + 1)
+                        await asyncio.sleep(min(wait, float(os.getenv("GROQ_MAX_WAIT_S", "20"))))
+                        continue
+                    r.raise_for_status()
+                    return r.json()["choices"][0]["message"]["content"]
+        except (httpx.HTTPError, KeyError, IndexError) as e:
+            raise LLMError(f"groq request failed: {type(e).__name__}") from e
+        raise LLMError("groq request failed: rate limited")  # pragma: no cover
+
+    def describe(self) -> dict:
+        return {"provider": self.name, "reasoning_model": self.reasoning_model, "fast_model": self.fast_model,
+                "temperature": self.temperature}

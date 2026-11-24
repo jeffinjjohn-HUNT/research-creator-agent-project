@@ -36,6 +36,11 @@ class Settings:
     llm_timeout_s: float = field(default_factory=lambda: float(os.getenv("LLM_TIMEOUT_S", "120")))
     llm_temperature: float = field(default_factory=lambda: float(os.getenv("LLM_TEMPERATURE", "0.2")))
 
+    groq_api_key: str = field(default_factory=lambda: os.getenv("GROQ_API_KEY", ""))
+    groq_model: str = field(default_factory=lambda: os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"))
+    groq_fast_model: str = field(default_factory=lambda: os.getenv("GROQ_FAST_MODEL", "llama-3.1-8b-instant"))
+    groq_url: str = field(default_factory=lambda: os.getenv("GROQ_URL", "https://api.groq.com/openai/v1"))
+
     # Search providers (all optional; fallbacks are documented in docs/architecture.md)
     tavily_api_key: str = field(default_factory=lambda: os.getenv("TAVILY_API_KEY", ""))
     brave_api_key: str = field(default_factory=lambda: os.getenv("BRAVE_API_KEY", ""))
