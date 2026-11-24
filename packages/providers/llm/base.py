@@ -133,17 +133,20 @@ class GroqLLM(LLM):
         headers = {"Authorization": f"Bearer {self.api_key}"}
         try:
             async with httpx.AsyncClient(timeout=self.timeout_s) as client:
-                for attempt in range(4):  # free tiers rate-limit: wait and retry instead of failing the job
+                for attempt in range(6):  # free tiers rate-limit: wait and retry instead of failing the job
                     r = await client.post(f"{self.url}/chat/completions", json=payload, headers=headers)
-                    if r.status_code == 429 and attempt < 3:
+                    if r.status_code == 429 and attempt < 5:
                         try:
                             wait = float(r.headers.get("retry-after", "") or 2 * (attempt + 1))
                         except ValueError:
                             wait = 2 * (attempt + 1)
-                        await asyncio.sleep(min(wait, float(os.getenv("GROQ_MAX_WAIT_S", "20"))))
+                        await asyncio.sleep(min(wait, float(os.getenv("GROQ_MAX_WAIT_S", "45"))))
                         continue
-                    r.raise_for_status()
+                    if r.status_code >= 400:  # say WHY (rate limit, bad key, bad model...) so it can be fixed
+                        raise LLMError(f"groq HTTP {r.status_code}: {r.text[:200]}")
                     return r.json()["choices"][0]["message"]["content"]
+        except LLMError:
+            raise
         except (httpx.HTTPError, KeyError, IndexError) as e:
             raise LLMError(f"groq request failed: {type(e).__name__}") from e
         raise LLMError("groq request failed: rate limited")  # pragma: no cover

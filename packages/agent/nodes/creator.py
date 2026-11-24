@@ -52,9 +52,10 @@ async def content_studio(state, deps):
     use_ids = [c.id for c in usable[:3]]
     facts = "\n".join(f"CLAIM {c.id} [{c.status}]: {c.claim_text}" for c in usable[:5])
     ev_text = "\n".join(f"- {e.title}: {e.snippet}" for e in top_evidence(plan.topic, evidence, 4))
-    sem = asyncio.Semaphore(2)
+    sem = asyncio.Semaphore(int(__import__("os").getenv("SECTION_CONCURRENCY", "1")))
 
     original = state["original"].extracted_text or ""
+    errors: list[str] = []
 
     async def one(f: str):
         avoid = ""
@@ -85,14 +86,15 @@ async def content_studio(state, deps):
             async with sem:
                 r = await deps.llm.generate_json(task="content_one", system=DRAFT_SYSTEM, prompt=prompt,
                                                  schema=DraftText, budget_s=120)
-        except LLMError:
+        except LLMError as e:
+            errors.append(str(e)[:160])
             return None
         text = r.draft_text.strip()
         return ContentDraft(format=f, tone=tone, draft_text=text, source_claim_ids=use_ids) if text else None
 
     drafts = [d for d in await asyncio.gather(*[one(f) for f in formats]) if d]
     if not drafts:
-        return {"drafts": [], "events": [ev("content", "error", "Content generation failed for every format")]}
+        return {"drafts": [], "events": [ev("content", "error", f"Content generation failed for every format ({errors[0] if errors else 'no detail'})")]}
     missed = len(formats) - len(drafts)
     note = f" ({missed} format(s) failed)" if missed else ""
     return {"drafts": drafts, "events": [ev("content", "warning" if missed else "done", f"{len(drafts)} drafts generated{note}")]}

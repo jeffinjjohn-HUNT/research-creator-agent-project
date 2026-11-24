@@ -125,7 +125,8 @@ async def synthesize(state, deps):
     plan, evidence, claims = state["plan"], state.get("evidence", []), state.get("claims", [])
     known = {e.id for e in evidence}
     claim_lines = "\n".join(f"- [{c.status}] {c.claim_text}" for c in claims[:8])
-    sem = asyncio.Semaphore(int(__import__("os").getenv("SECTION_CONCURRENCY", "2")))
+    sem = asyncio.Semaphore(int(__import__("os").getenv("SECTION_CONCURRENCY", "1")))
+    errors: list[str] = []
 
     async def one(title: str) -> ReportSection | None:
         picks = top_evidence(f"{plan.topic} {title} {SECTION_HINTS[title]}", evidence, 4)
@@ -136,7 +137,8 @@ async def synthesize(state, deps):
             async with sem:
                 sec = await deps.llm.generate_json(task="synthesize_section", system=SECTION_SYSTEM, prompt=prompt,
                                                    schema=ReportSection, budget_s=120)
-        except LLMError:
+        except LLMError as e:
+            errors.append(str(e)[:160])
             return None
         sec.title = title
         sec.body = re.sub(r"\s*\[E\d+\]", "", sec.body).strip()  # citations belong in the chips, not the prose
@@ -166,9 +168,10 @@ async def synthesize(state, deps):
     report.model_version = deps.llm.model or deps.llm.name
     report.prompt_version = PROMPT_VERSION
     if len(failed) == len(REQUIRED_SECTIONS):
-        kind, msg = "error", "Synthesis failed: the model wrote none of the sections"
+        kind, msg = "error", f"Synthesis failed: the model wrote none of the sections ({errors[0] if errors else 'no detail'})"
     elif failed:
-        kind, msg = "warning", f"Report written; {len(failed)} section(s) could not be written: {', '.join(failed)}"
+        kind, msg = "warning", (f"Report written; {len(failed)} section(s) could not be written: {', '.join(failed)} "
+                                f"({errors[0] if errors else 'no detail'})")
     else:
         kind, msg = "done", f"Report written ({len(report.sections)} sections)"
     return {"report": report, "events": [ev("synthesize", kind, msg)]}
