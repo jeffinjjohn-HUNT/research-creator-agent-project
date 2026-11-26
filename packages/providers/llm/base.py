@@ -134,16 +134,27 @@ class GroqLLM(LLM):
         if "gpt-oss" in model:  # reasoning models: keep thinking short so tokens go to the JSON answer
             payload["reasoning_effort"] = os.getenv("GROQ_REASONING_EFFORT", "low")
         headers = {"Authorization": f"Bearer {self.api_key}"}
+        # Rate limits are per model on Groq: on a 429, try the other model right away before waiting.
+        other = self.fast_model if model == self.reasoning_model else self.reasoning_model
+        tried_other = other == model
         try:
             async with httpx.AsyncClient(timeout=self.timeout_s) as client:
-                for attempt in range(6):  # free tiers rate-limit: wait and retry instead of failing the job
+                for attempt in range(6):
                     r = await client.post(f"{self.url}/chat/completions", json=payload, headers=headers)
                     if r.status_code == 429 and attempt < 5:
+                        if not tried_other:
+                            tried_other = True
+                            payload["model"] = other
+                            if "gpt-oss" in other:
+                                payload["reasoning_effort"] = os.getenv("GROQ_REASONING_EFFORT", "low")
+                            else:
+                                payload.pop("reasoning_effort", None)
+                            continue
                         try:
                             wait = float(r.headers.get("retry-after", "") or 2 * (attempt + 1))
                         except ValueError:
                             wait = 2 * (attempt + 1)
-                        await asyncio.sleep(min(wait, float(os.getenv("GROQ_MAX_WAIT_S", "45"))))
+                        await asyncio.sleep(min(wait, float(os.getenv("GROQ_MAX_WAIT_S", "25"))))
                         continue
                     if r.status_code >= 400:  # say WHY (rate limit, bad key, bad model...) so it can be fixed
                         raise LLMError(f"groq HTTP {r.status_code}: {r.text[:200]}")

@@ -234,3 +234,32 @@ def test_groq_requires_key():
     from packages.providers.llm.base import GroqLLM
     with pytest.raises(ValueError):
         GroqLLM("", "m", "m", 30, 0.2)
+
+
+@pytest.mark.asyncio
+async def test_groq_switches_to_other_model_on_429():
+    import json as _json, threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from packages.providers.llm.base import GroqLLM
+    models = []
+
+    class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = _json.loads(self.rfile.read(int(self.headers["content-length"])))
+            models.append(body["model"])
+            if len(models) == 1:
+                self.send_response(429); self.end_headers(); return
+            out = _json.dumps({"choices": [{"message": {"content": '{"topic":"ok"}'}}]}).encode()
+            self.send_response(200); self.send_header("content-type", "application/json"); self.end_headers(); self.wfile.write(out)
+
+        def log_message(self, *a):
+            pass
+
+    srv = HTTPServer(("127.0.0.1", 8996), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        await GroqLLM("k", "big", "small", 30, 0.2, "http://127.0.0.1:8996/v1").generate_json(
+            task="t", system="s", prompt="p", schema=ResearchPlan)
+    finally:
+        srv.shutdown()
+    assert models == ["big", "small"]

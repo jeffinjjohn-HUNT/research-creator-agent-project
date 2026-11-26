@@ -136,7 +136,7 @@ async def synthesize(state, deps):
         try:
             async with sem:
                 sec = await deps.llm.generate_json(task="synthesize_section", system=SECTION_SYSTEM, prompt=prompt,
-                                                   schema=ReportSection, budget_s=120)
+                                                   schema=ReportSection, fast=True, budget_s=120)
         except LLMError as e:
             errors.append(str(e)[:160])
             return None
