@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import html
+import json
 import re
 from collections.abc import Awaitable, Callable
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 import httpx
 
@@ -77,11 +78,29 @@ async def extract_source(url: str | None, pasted_text: str | None, fetcher: Fetc
         return OriginalSource(note="No URL or text provided.")
 
     platform = detect_platform(url)
+
+    # YouTube blocks many cloud servers from its normal page, but its public oEmbed service
+    # (the one made for embedding videos) still gives the title and channel name.
+    if platform == Platform.youtube:
+        try:
+            _u, _c, raw = await fetcher("https://www.youtube.com/oembed?format=json&url=" + quote(url, safe=""))
+            data = json.loads(raw)
+            title, creator = (data.get("title") or "").strip(), (data.get("author_name") or "").strip()
+            if title:
+                text = f"{title} (YouTube video by {creator})" if creator else title
+                return OriginalSource(url=url, platform=platform, title=title, creator=creator or None,
+                                      extracted_text=text, extraction_status=ExtractionStatus.partial,
+                                      confidence="low",
+                                      note="Only the public video title and channel were available; "
+                                           "no transcript was read.")
+        except (UnsafeURL, PermissionError, ValueError, httpx.HTTPError, TimeoutError):
+            pass  # fall back to the normal page below
+
     try:
         final_url, _ctype, page = await fetcher(url)
     except (UnsafeURL, PermissionError, ValueError, httpx.HTTPError, TimeoutError) as e:
         return OriginalSource(url=url, platform=platform, extraction_status=ExtractionStatus.inaccessible,
-                              note=f"Could not read the page ({type(e).__name__}). Please paste the caption, "
+                              note=f"Could not read the page ({type(e).__name__}: {str(e)[:60]}). Please paste the caption, "
                                    "transcript or text, or upload a screenshot.")
 
     meta = parse_meta(page)

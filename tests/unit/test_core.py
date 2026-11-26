@@ -263,3 +263,16 @@ async def test_groq_switches_to_other_model_on_429():
     finally:
         srv.shutdown()
     assert models == ["big", "small"]
+
+
+def test_youtube_oembed_fallback():
+    import asyncio, json
+    from packages.providers.extraction.extractor import extract_source
+
+    async def fake(url):
+        if "oembed" in url:
+            return url, "application/json", json.dumps({"title": "Cursor Tutorial", "author_name": "Tech With Tim"})
+        raise PermissionError("HTTP 403")
+
+    src = asyncio.run(extract_source("https://www.youtube.com/watch?v=ocMOZpuAMw4", None, fetcher=fake))
+    assert src.extraction_status.value == "partial" and "Cursor Tutorial" in src.extracted_text
