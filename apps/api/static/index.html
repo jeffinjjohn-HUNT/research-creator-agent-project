@@ -184,7 +184,6 @@
     <a id="nNew" data-go="#/new"><span>New research</span></a>
   </div>
   <div class="grow"></div>
-  <div class="mode" id="mode"></div>
   <button class="iconbtn" id="voiceBtn" title="Voice profile"></button>
   <button class="iconbtn" id="themeBtn" title="Toggle dark mode"></button>
 </nav>
@@ -313,7 +312,7 @@ function setTheme(t) { document.documentElement.setAttribute("data-theme", t); $
 let savedTheme = null; try { savedTheme = localStorage.getItem("theme"); } catch {}
 setTheme(savedTheme || "light");
 $("themeBtn").onclick = () => setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
-api("/health").then(r => r.json()).then(h => { $("mode").textContent = h.mock ? "Demo mode · sample data" : "Model · " + (h.llm.reasoning_model || h.llm.model || h.llm.provider); }).catch(() => {});
+window.modelName = ""; api("/health").then(r => r.json()).then(h => { window.modelName = h.mock ? "demo (sample data)" : (h.llm.reasoning_model || h.llm.model || h.llm.provider); }).catch(() => {});
 
 /* ---------- router ---------- */
 let timer = null, prefill = null, runId = 0;
